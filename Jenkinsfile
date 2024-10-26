@@ -1,52 +1,44 @@
+def gv
+
 pipeline {
     agent any
-
+    parameters {
+        choice(name: 'VERSION', choices: ['1.1.0', '1.2.0', '1.3.0'], description: '')
+        booleanParam(name: 'executeTests', defaultValue: true, description: '')
+    }
     stages {
-        stage('Checkout') {
+        stage("init") {
             steps {
-                // Проверка исходного кода из репозитория Git
-              //   git url: 'https://github.com/your-repo/your-project.git', branch: 'main'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                // Команда сборки. Здесь замените на команду, подходящую для вашего проекта
-              //   sh './gradlew build'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                // Запуск тестов
-                sh './gradlew test'
-            }
-            post {
-                always {
-                    // Публикация результатов тестов
-                  //   junit 'build/test-results/test/*.xml'
+                script {
+                   gv = load "script.groovy" 
                 }
             }
         }
-
-        stage('Deploy') {
+        stage("build") {
+            steps {
+                script {
+                    gv.buildApp()
+                }
+            }
+        }
+        stage("test") {
             when {
-                branch 'main'
+                expression {
+                    params.executeTests
+                }
             }
             steps {
-                // Шаг развертывания (например, копирование артефактов на сервер)
-                echo 'Deploying to production environment...'
-                // Добавьте реальные шаги развертывания, например, SCP/SSH для копирования файлов
+                script {
+                    gv.testApp()
+                }
             }
         }
-    }
-
-    post {
-        success {
-            echo 'Build succeeded!'
+        stage("deploy") {
+            steps {
+                script {
+                    gv.deployApp()
+                }
+            }
         }
-        failure {
-            echo 'Build failed!'
-        }
-    }
+    }   
 }
